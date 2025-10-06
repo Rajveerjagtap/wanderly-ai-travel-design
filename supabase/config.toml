@@ -1,0 +1,4 @@
+project_id = "zczeimrzkbrpezkcasqi"
+
+[functions.generate-route]
+verify_jwt = false

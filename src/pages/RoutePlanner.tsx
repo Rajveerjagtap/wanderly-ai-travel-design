@@ -1,14 +1,16 @@
-import { useState } from "react";
-import { MapPin, Utensils, Landmark, Train, Plus, ArrowLeft } from "lucide-react";
+import { useState, useEffect } from "react";
+import { MapPin, Utensils, Landmark, Train, Plus, ArrowLeft, Bed } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { StopCard } from "@/components/StopCard";
 import { POIModal } from "@/components/POIModal";
 import { BottomNav } from "@/components/BottomNav";
+import { Badge } from "@/components/ui/badge";
 import routeParis from "@/assets/route-paris.jpg";
 
 interface Stop {
   id: number;
+  type: "transport" | "attraction" | "restaurant" | "accommodation";
   icon: React.ReactNode;
   title: string;
   time: string;
@@ -16,54 +18,114 @@ interface Stop {
   image: string;
   rating: number;
   description: string;
+  popularity?: number;
+  bestTimeToVisit?: string;
+}
+
+interface RouteData {
+  startLocation: string;
+  destination: string;
+  stops: Array<{
+    type: string;
+    title: string;
+    time: string;
+    cost: string;
+    description: string;
+    popularity: number;
+    bestTimeToVisit: string;
+  }>;
+  totalDuration: string;
+  totalCost: string;
+  overallBestTime: string;
 }
 
 const RoutePlanner = () => {
   const navigate = useNavigate();
   const [selectedPOI, setSelectedPOI] = useState<Stop | null>(null);
+  const [routeData, setRouteData] = useState<RouteData | null>(null);
+  const [stops, setStops] = useState<Stop[]>([]);
 
-  const stops: Stop[] = [
-    {
-      id: 1,
-      icon: <Train className="w-6 h-6" />,
-      title: "Train to Paris Gare du Nord",
-      time: "2h 30min",
-      cost: "$45",
-      image: routeParis,
-      rating: 4.5,
-      description: "High-speed train from London to Paris. Comfortable seats and beautiful countryside views along the way.",
-    },
-    {
-      id: 2,
-      icon: <Landmark className="w-6 h-6" />,
-      title: "Eiffel Tower Visit",
-      time: "3h",
-      cost: "$35",
-      image: routeParis,
-      rating: 4.9,
-      description: "Iconic iron lattice tower on the Champ de Mars. Get stunning views of Paris from the top. Book tickets in advance to skip the lines.",
-    },
-    {
-      id: 3,
-      icon: <Utensils className="w-6 h-6" />,
-      title: "Le Petit Cler Restaurant",
-      time: "1h 30min",
-      cost: "$60",
-      image: routeParis,
-      rating: 4.7,
-      description: "Authentic French bistro serving traditional cuisine. Famous for their escargot and coq au vin. Cozy atmosphere perfect for a romantic dinner.",
-    },
-    {
-      id: 4,
-      icon: <Landmark className="w-6 h-6" />,
-      title: "Louvre Museum",
-      time: "4h",
-      cost: "$20",
-      image: routeParis,
-      rating: 4.8,
-      description: "World's largest art museum and historic monument. Home to the Mona Lisa and thousands of priceless artworks. Plan to spend at least half a day here.",
-    },
-  ];
+  // Get icon based on stop type
+  const getIconForType = (type: string) => {
+    switch (type) {
+      case "transport":
+        return <Train className="w-6 h-6" />;
+      case "attraction":
+        return <Landmark className="w-6 h-6" />;
+      case "restaurant":
+        return <Utensils className="w-6 h-6" />;
+      case "accommodation":
+        return <Bed className="w-6 h-6" />;
+      default:
+        return <MapPin className="w-6 h-6" />;
+    }
+  };
+
+  useEffect(() => {
+    // Load route data from sessionStorage
+    const stored = sessionStorage.getItem('generatedRoute');
+    if (stored) {
+      const data: RouteData = JSON.parse(stored);
+      setRouteData(data);
+      
+      // Transform AI-generated stops to UI format
+      const transformedStops: Stop[] = data.stops.map((stop, index) => ({
+        id: index + 1,
+        type: stop.type as "transport" | "attraction" | "restaurant" | "accommodation",
+        icon: getIconForType(stop.type),
+        title: stop.title,
+        time: stop.time,
+        cost: stop.cost,
+        image: routeParis, // Use default image
+        rating: stop.popularity,
+        description: stop.description,
+        popularity: stop.popularity,
+        bestTimeToVisit: stop.bestTimeToVisit,
+      }));
+      
+      setStops(transformedStops);
+    } else {
+      // Fallback to default route if no AI data
+      setRouteData({
+        startLocation: "London",
+        destination: "Paris",
+        stops: [],
+        totalDuration: "2 days",
+        totalCost: "$300-400",
+        overallBestTime: "Spring or Fall"
+      });
+      
+      // Set default stops
+      setStops([
+        {
+          id: 1,
+          type: "transport",
+          icon: <Train className="w-6 h-6" />,
+          title: "Train to Paris Gare du Nord",
+          time: "2h 30min",
+          cost: "$45",
+          image: routeParis,
+          rating: 4.5,
+          description: "High-speed train from London to Paris. Comfortable seats and beautiful countryside views.",
+          popularity: 4.5,
+          bestTimeToVisit: "Year-round"
+        },
+        {
+          id: 2,
+          type: "attraction",
+          icon: <Landmark className="w-6 h-6" />,
+          title: "Eiffel Tower Visit",
+          time: "3h",
+          cost: "$35",
+          image: routeParis,
+          rating: 4.9,
+          description: "Iconic iron lattice tower on the Champ de Mars. Get stunning views of Paris from the top.",
+          popularity: 5,
+          bestTimeToVisit: "Spring-Fall"
+        },
+      ]);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -81,8 +143,15 @@ const RoutePlanner = () => {
             </Button>
             <div className="flex-1">
               <h1 className="font-heading text-xl font-bold">Your Route</h1>
-              <p className="text-sm text-muted-foreground">London → Paris</p>
+              <p className="text-sm text-muted-foreground">
+                {routeData?.startLocation || "London"} → {routeData?.destination || "Paris"}
+              </p>
             </div>
+            {routeData?.overallBestTime && (
+              <Badge variant="secondary" className="ml-2">
+                Best: {routeData.overallBestTime}
+              </Badge>
+            )}
           </div>
         </div>
       </div>
@@ -97,9 +166,18 @@ const RoutePlanner = () => {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
           <div className="absolute bottom-4 left-4 right-4">
-            <div className="flex items-center gap-2 text-foreground">
-              <MapPin className="w-5 h-5 text-primary" />
-              <span className="font-heading font-semibold">4 stops • 11h total • $160</span>
+            <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-4 shadow-medium">
+              <div className="flex items-center gap-2 text-foreground mb-2">
+                <MapPin className="w-5 h-5 text-primary" />
+                <span className="font-heading font-semibold">
+                  {stops.length} stops • {routeData?.totalDuration || "N/A"} • {routeData?.totalCost || "N/A"}
+                </span>
+              </div>
+              {routeData?.overallBestTime && (
+                <p className="text-sm text-muted-foreground">
+                  Best time to visit: {routeData.overallBestTime}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -120,6 +198,16 @@ const RoutePlanner = () => {
                 cost={stop.cost}
                 onClick={() => setSelectedPOI(stop)}
               />
+              {stop.popularity && stop.bestTimeToVisit && (
+                <div className="ml-14 mt-2 flex gap-3 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    ⭐ Popularity: {stop.popularity}/5
+                  </span>
+                  <span className="flex items-center gap-1">
+                    📅 Best: {stop.bestTimeToVisit}
+                  </span>
+                </div>
+              )}
             </div>
           ))}
         </div>

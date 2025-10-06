@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RouteCard } from "@/components/RouteCard";
 import { BottomNav } from "@/components/BottomNav";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import heroImage from "@/assets/wanderly-hero.jpg";
 import routeParis from "@/assets/route-paris.jpg";
 import routeBeach from "@/assets/route-beach.jpg";
@@ -12,8 +14,10 @@ import routeJapan from "@/assets/route-japan.jpg";
 
 const Home = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [startLocation, setStartLocation] = useState("");
   const [destination, setDestination] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const topRoutes = [
     {
@@ -39,9 +43,59 @@ const Home = () => {
     },
   ];
 
-  const handleCreateRoute = () => {
-    if (startLocation && destination) {
+  const handleCreateRoute = async () => {
+    if (!startLocation || !destination) return;
+    
+    setIsGenerating(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-route', {
+        body: { startLocation, destination }
+      });
+
+      if (error) {
+        console.error("Error generating route:", error);
+        toast({
+          title: "Error",
+          description: "Failed to generate route. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data.error) {
+        toast({
+          title: "Error",
+          description: data.error,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log("Generated route data:", data);
+      
+      // Store route data in sessionStorage for the route planner page
+      sessionStorage.setItem('generatedRoute', JSON.stringify({
+        startLocation,
+        destination,
+        ...data
+      }));
+      
+      toast({
+        title: "Route Generated!",
+        description: `Your route from ${startLocation} to ${destination} is ready.`,
+      });
+      
       navigate("/route");
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -91,10 +145,10 @@ const Home = () => {
             variant="accent" 
             className="w-full group"
             onClick={handleCreateRoute}
-            disabled={!startLocation || !destination}
+            disabled={!startLocation || !destination || isGenerating}
           >
-            Create My Route
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            {isGenerating ? "Generating Route..." : "Create My Route"}
+            {!isGenerating && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
           </Button>
         </div>
 

@@ -124,7 +124,7 @@ const Home = () => {
           <div className="relative">
             <MapPin className="absolute left-5 top-1/2 transform -translate-y-1/2 text-primary w-5 h-5" />
             <Input
-              placeholder="Starting from..."
+              placeholder="e.g., Mumbai"
               value={startLocation}
               onChange={(e) => setStartLocation(e.target.value)}
               className="pl-14"
@@ -134,7 +134,7 @@ const Home = () => {
           <div className="relative">
             <Navigation className="absolute left-5 top-1/2 transform -translate-y-1/2 text-accent w-5 h-5" />
             <Input
-              placeholder="Going to..."
+              placeholder="e.g., Goa"
               value={destination}
               onChange={(e) => setDestination(e.target.value)}
               className="pl-14"

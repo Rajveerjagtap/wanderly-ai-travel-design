@@ -31,17 +31,17 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an expert travel planner. Generate a detailed travel route with realistic information about transportation, attractions, restaurants, and accommodations. Include accurate cost estimates, timing, and recommendations for the best time to visit.`
+            content: `You are an expert travel planner specializing in Indian destinations. Generate detailed travel routes with realistic information about transportation, attractions, restaurants, and accommodations across India. Include accurate cost estimates in Indian Rupees (₹), timing, and recommendations for the best time to visit considering Indian seasons and weather.`
           },
           {
             role: "user",
             content: `Create a detailed travel route from ${startLocation} to ${destination}. Include 4-6 stops with transportation, attractions, and dining options. For each stop, provide:
-- Mode of transport (train, flight, bus, etc.)
+- Mode of transport (train, flight, bus, car, etc.) - use common Indian transport options
 - Estimated time
-- Estimated cost in USD
+- Estimated cost in Indian Rupees (₹)
 - Popularity rating (1-5)
-- Best time to visit (month/season)
-- Brief description`
+- Best time to visit (month/season) - consider Indian weather patterns
+- Brief description with local context`
           }
         ],
         tools: [
@@ -73,7 +73,7 @@ serve(async (req) => {
                         },
                         cost: {
                           type: "string",
-                          description: "Estimated cost in USD (e.g., '$45', '$20-30')"
+                          description: "Estimated cost in Indian Rupees (e.g., '₹500', '₹1000-1500')"
                         },
                         description: {
                           type: "string",
@@ -99,7 +99,7 @@ serve(async (req) => {
                   },
                   totalCost: {
                     type: "string",
-                    description: "Estimated total cost range (e.g., '$500-700')"
+                    description: "Estimated total cost range in Indian Rupees (e.g., '₹5000-7000')"
                   },
                   overallBestTime: {
                     type: "string",

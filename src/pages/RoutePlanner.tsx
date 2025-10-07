@@ -87,12 +87,12 @@ const RoutePlanner = () => {
     } else {
       // Fallback to default route if no AI data
       setRouteData({
-        startLocation: "London",
-        destination: "Paris",
+        startLocation: "Delhi",
+        destination: "Agra",
         stops: [],
-        totalDuration: "2 days",
-        totalCost: "$300-400",
-        overallBestTime: "Spring or Fall"
+        totalDuration: "1 day",
+        totalCost: "₹2000-3000",
+        overallBestTime: "October to March"
       });
       
       // Set default stops
@@ -101,12 +101,12 @@ const RoutePlanner = () => {
           id: 1,
           type: "transport",
           icon: <Train className="w-6 h-6" />,
-          title: "Train to Paris Gare du Nord",
-          time: "2h 30min",
-          cost: "$45",
+          title: "Gatimaan Express to Agra",
+          time: "1h 40min",
+          cost: "₹750",
           image: routeParis,
           rating: 4.5,
-          description: "High-speed train from London to Paris. Comfortable seats and beautiful countryside views.",
+          description: "India's fastest train connecting Delhi to Agra. Enjoy comfortable AC seating and onboard meals.",
           popularity: 4.5,
           bestTimeToVisit: "Year-round"
         },
@@ -114,14 +114,14 @@ const RoutePlanner = () => {
           id: 2,
           type: "attraction",
           icon: <Landmark className="w-6 h-6" />,
-          title: "Eiffel Tower Visit",
+          title: "Taj Mahal Visit",
           time: "3h",
-          cost: "$35",
+          cost: "₹1100",
           image: routeParis,
-          rating: 4.9,
-          description: "Iconic iron lattice tower on the Champ de Mars. Get stunning views of Paris from the top.",
+          rating: 5,
+          description: "UNESCO World Heritage Site and one of the Seven Wonders of the World. Witness the magnificent white marble monument.",
           popularity: 5,
-          bestTimeToVisit: "Spring-Fall"
+          bestTimeToVisit: "October-March"
         },
       ]);
     }

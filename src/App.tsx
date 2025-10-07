@@ -7,6 +7,8 @@ import Home from "./pages/Home";
 import RoutePlanner from "./pages/RoutePlanner";
 import Community from "./pages/Community";
 import Profile from "./pages/Profile";
+import Auth from "./pages/Auth";
+import ProfileSetup from "./pages/ProfileSetup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -19,6 +21,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/profile-setup" element={<ProfileSetup />} />
           <Route path="/route" element={<RoutePlanner />} />
           <Route path="/community" element={<Community />} />
           <Route path="/profile" element={<Profile />} />

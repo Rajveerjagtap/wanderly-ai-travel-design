@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { MapPin, Navigation, ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { MapPin, Navigation, ArrowRight, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,19 @@ const Home = () => {
   const [startLocation, setStartLocation] = useState("");
   const [destination, setDestination] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsLoggedIn(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const topRoutes = [
     {
@@ -43,7 +56,20 @@ const Home = () => {
     },
   ];
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast({
+      title: "Logged out",
+      description: "You've been successfully logged out.",
+    });
+  };
+
   const handleCreateRoute = async () => {
+    if (!isLoggedIn) {
+      navigate("/auth");
+      return;
+    }
+
     if (!startLocation || !destination) return;
     
     setIsGenerating(true);
@@ -101,6 +127,26 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-gradient-hero pb-24">
+      {/* Header */}
+      <div className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-30">
+        <div className="max-w-screen-md mx-auto px-4 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="font-heading text-2xl font-bold text-foreground">Wanderly</h1>
+            <p className="text-sm text-muted-foreground">Plan your perfect journey</p>
+          </div>
+          {isLoggedIn ? (
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          ) : (
+            <Button variant="ghost" size="sm" onClick={() => navigate("/auth")}>
+              Login
+            </Button>
+          )}
+        </div>
+      </div>
+
       <div className="max-w-screen-md mx-auto px-4 py-6">
         {/* Hero Section */}
         <div className="text-center mb-8 animate-fade-in">

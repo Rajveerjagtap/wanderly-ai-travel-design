@@ -6,6 +6,7 @@ import { StopCard } from "@/components/StopCard";
 import { POIModal } from "@/components/POIModal";
 import { BottomNav } from "@/components/BottomNav";
 import { Badge } from "@/components/ui/badge";
+import { RouteMap } from "@/components/RouteMap";
 import routeParis from "@/assets/route-paris.jpg";
 
 interface Stop {
@@ -158,14 +159,13 @@ const RoutePlanner = () => {
 
       <div className="max-w-screen-md mx-auto px-4 py-6">
         {/* Map Section */}
-        <div className="bg-primary/5 rounded-3xl h-64 mb-6 relative overflow-hidden shadow-soft animate-fade-in">
-          <img 
-            src={routeParis} 
-            alt="Route map" 
-            className="w-full h-full object-cover"
+        <div className="bg-primary/5 rounded-3xl h-96 mb-6 relative overflow-hidden shadow-soft animate-fade-in">
+          <RouteMap
+            startLocation={routeData?.startLocation || "Delhi"}
+            destination={routeData?.destination || "Agra"}
+            stops={stops}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-          <div className="absolute bottom-4 left-4 right-4">
+          <div className="absolute bottom-4 left-4 right-4 pointer-events-none">
             <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-4 shadow-medium">
               <div className="flex items-center gap-2 text-foreground mb-2">
                 <MapPin className="w-5 h-5 text-primary" />

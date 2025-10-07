@@ -23,8 +23,8 @@ const defaultCenter = {
   lng: 78.9629, // Center of India
 };
 
-// Replace with your Google Maps API key
-const GOOGLE_MAPS_API_KEY = "YOUR_GOOGLE_MAPS_API_KEY";
+// Google Maps API key
+const GOOGLE_MAPS_API_KEY = "AIzaSyDz0YtLxP8sbwc7aPvY5aZlnTo9EX3AZBQ";
 
 export const RouteMap = ({ startLocation, destination, stops }: RouteMapProps) => {
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
@@ -73,19 +73,6 @@ export const RouteMap = ({ startLocation, destination, stops }: RouteMapProps) =
       }
     );
   }, [startLocation, destination, stops]);
-
-  if (GOOGLE_MAPS_API_KEY === "YOUR_GOOGLE_MAPS_API_KEY") {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-muted rounded-3xl">
-        <div className="text-center p-8">
-          <p className="text-muted-foreground mb-2">Google Maps API key required</p>
-          <p className="text-sm text-muted-foreground">
-            Please add your Google Maps API key to display the route map
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY}>

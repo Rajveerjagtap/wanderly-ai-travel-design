@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { MapPin, Navigation, ArrowRight, LogOut } from "lucide-react";
+import { MapPin, Navigation, ArrowRight, LogOut, Cloud, Wind } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,10 +7,8 @@ import { RouteCard } from "@/components/RouteCard";
 import { BottomNav } from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Card } from "@/components/ui/card";
 import heroImage from "@/assets/wanderly-hero.jpg";
-import routeParis from "@/assets/route-paris.jpg";
-import routeBeach from "@/assets/route-beach.jpg";
-import routeJapan from "@/assets/route-japan.jpg";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -19,6 +17,8 @@ const Home = () => {
   const [destination, setDestination] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [destinationWeather, setDestinationWeather] = useState<any>(null);
+  const [isLoadingWeather, setIsLoadingWeather] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -36,25 +36,53 @@ const Home = () => {
     {
       id: 1,
       title: "Paris Romance Weekend",
-      image: routeParis,
+      destination: "Paris",
       creator: "Sophie_M",
       rating: 4.8,
     },
     {
       id: 2,
       title: "Mediterranean Coast Explorer",
-      image: routeBeach,
+      destination: "Santorini",
       creator: "TravelBug22",
       rating: 4.9,
     },
     {
       id: 3,
       title: "Kyoto Cherry Blossom Tour",
-      image: routeJapan,
+      destination: "Kyoto",
       creator: "WanderlustJen",
       rating: 5.0,
     },
   ];
+
+  // Fetch weather when destination changes
+  useEffect(() => {
+    const fetchWeather = async () => {
+      if (!destination || destination.length < 3) {
+        setDestinationWeather(null);
+        return;
+      }
+
+      setIsLoadingWeather(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('get-weather', {
+          body: { location: destination }
+        });
+
+        if (error) throw error;
+        setDestinationWeather(data);
+      } catch (error) {
+        console.error('Error fetching weather:', error);
+        setDestinationWeather(null);
+      } finally {
+        setIsLoadingWeather(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchWeather, 800);
+    return () => clearTimeout(debounceTimer);
+  }, [destination]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -196,6 +224,42 @@ const Home = () => {
             {isGenerating ? "Generating Route..." : "Create My Route"}
             {!isGenerating && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
           </Button>
+
+          {/* Weather Info Card */}
+          {destinationWeather && (
+            <Card className="p-4 bg-gradient-to-br from-primary/10 to-accent/10 border-primary/20 animate-fade-in">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Current weather in</p>
+                  <h3 className="font-heading font-semibold text-foreground">
+                    {destinationWeather.location}
+                  </h3>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl mb-1">{destinationWeather.weatherIcon}</div>
+                  <p className="text-2xl font-bold text-foreground">
+                    {destinationWeather.temperature}°C
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Cloud className="w-4 h-4" />
+                  <span>{destinationWeather.weatherDescription}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Wind className="w-4 h-4" />
+                  <span>{destinationWeather.windSpeed} km/h</span>
+                </div>
+              </div>
+            </Card>
+          )}
+          
+          {isLoadingWeather && destination && (
+            <div className="text-center text-sm text-muted-foreground">
+              Loading weather data...
+            </div>
+          )}
         </div>
 
         {/* Community's Top Routes */}
@@ -218,7 +282,7 @@ const Home = () => {
               <RouteCard
                 key={route.id}
                 title={route.title}
-                image={route.image}
+                image={`https://source.unsplash.com/800x600/?${route.destination},travel,landmark`}
                 creator={route.creator}
                 rating={route.rating}
                 onClick={() => navigate("/community")}

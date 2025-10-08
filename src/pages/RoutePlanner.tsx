@@ -69,7 +69,7 @@ const RoutePlanner = () => {
       const data: RouteData = JSON.parse(stored);
       setRouteData(data);
       
-      // Transform AI-generated stops to UI format
+      // Transform AI-generated stops to UI format with real images
       const transformedStops: Stop[] = data.stops.map((stop, index) => ({
         id: index + 1,
         type: stop.type as "transport" | "attraction" | "restaurant" | "accommodation",
@@ -77,7 +77,7 @@ const RoutePlanner = () => {
         title: stop.title,
         time: stop.time,
         cost: stop.cost,
-        image: routeParis, // Use default image
+        image: `https://source.unsplash.com/800x600/?${encodeURIComponent(stop.title)},${stop.type}`,
         rating: stop.popularity,
         description: stop.description,
         popularity: stop.popularity,

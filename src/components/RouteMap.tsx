@@ -39,14 +39,15 @@ export const RouteMap = ({ startLocation, destination, stops }: RouteMapProps) =
 
     const directionsService = new google.maps.DirectionsService();
 
-    // Create waypoints from stops that are attractions
-    const waypoints = stops
+    // Create waypoints from stops that are attractions - limit to avoid API quota issues
+    const attractionStops = stops
       .filter(stop => stop.type === "attraction" || stop.type === "restaurant")
-      .slice(0, 8) // Google Maps API limit
-      .map(stop => ({
-        location: stop.title,
-        stopover: true,
-      }));
+      .slice(0, 3); // Reduced limit for better performance
+
+    const waypoints = attractionStops.map(stop => ({
+      location: stop.title,
+      stopover: true,
+    }));
 
     directionsService.route(
       {
@@ -54,6 +55,7 @@ export const RouteMap = ({ startLocation, destination, stops }: RouteMapProps) =
         destination: destination,
         waypoints: waypoints,
         travelMode: google.maps.TravelMode.DRIVING,
+        optimizeWaypoints: true, // Optimize route for better path
       },
       (result, status) => {
         if (status === google.maps.DirectionsStatus.OK && result) {
@@ -72,7 +74,32 @@ export const RouteMap = ({ startLocation, destination, stops }: RouteMapProps) =
             lng: centerPoint.lng(),
           });
         } else {
-          console.error("Directions request failed:", status);
+          console.error("Directions request failed with status:", status);
+          // If directions fail, try without waypoints
+          if (waypoints.length > 0) {
+            directionsService.route(
+              {
+                origin: startLocation,
+                destination: destination,
+                travelMode: google.maps.TravelMode.DRIVING,
+              },
+              (result, status) => {
+                if (status === google.maps.DirectionsStatus.OK && result) {
+                  setDirections(result);
+                  const bounds = new google.maps.LatLngBounds();
+                  result.routes[0].legs.forEach(leg => {
+                    if (leg.start_location) bounds.extend(leg.start_location);
+                    if (leg.end_location) bounds.extend(leg.end_location);
+                  });
+                  const centerPoint = bounds.getCenter();
+                  setCenter({
+                    lat: centerPoint.lat(),
+                    lng: centerPoint.lng(),
+                  });
+                }
+              }
+            );
+          }
         }
       }
     );
@@ -88,28 +115,46 @@ export const RouteMap = ({ startLocation, destination, stops }: RouteMapProps) =
 
   return (
     <GoogleMap
-        mapContainerStyle={mapContainerStyle}
-        center={center}
-        zoom={6}
-        options={{
-          zoomControl: true,
-          streetViewControl: false,
-          mapTypeControl: false,
-          fullscreenControl: false,
-        }}
-      >
-        {directions && (
-          <DirectionsRenderer
-            directions={directions}
-            options={{
-              suppressMarkers: false,
-              polylineOptions: {
-                strokeColor: "#8B5CF6",
-                strokeWeight: 4,
-              },
-            }}
-          />
-        )}
-      </GoogleMap>
+      mapContainerStyle={mapContainerStyle}
+      center={center}
+      zoom={directions ? 6 : 8}
+      options={{
+        zoomControl: true,
+        streetViewControl: false,
+        mapTypeControl: true,
+        fullscreenControl: true,
+        styles: [
+          {
+            featureType: "poi",
+            elementType: "labels",
+            stylers: [{ visibility: "simplified" }]
+          }
+        ],
+      }}
+    >
+      {directions && (
+        <DirectionsRenderer
+          directions={directions}
+          options={{
+            suppressMarkers: false,
+            polylineOptions: {
+              strokeColor: "hsl(180, 100%, 25%)", // Using primary color
+              strokeWeight: 5,
+              strokeOpacity: 0.8,
+            },
+            markerOptions: {
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 8,
+                fillColor: "hsl(39, 100%, 50%)", // Using accent color
+                fillOpacity: 1,
+                strokeColor: "#fff",
+                strokeWeight: 2,
+              }
+            }
+          }}
+        />
+      )}
+    </GoogleMap>
   );
 };

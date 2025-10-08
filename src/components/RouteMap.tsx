@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { GoogleMap, LoadScript, Marker, DirectionsRenderer } from "@react-google-maps/api";
+import { GoogleMap, useLoadScript, DirectionsRenderer } from "@react-google-maps/api";
 
 interface Stop {
   title: string;
@@ -30,8 +30,12 @@ export const RouteMap = ({ startLocation, destination, stops }: RouteMapProps) =
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [center, setCenter] = useState(defaultCenter);
 
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+  });
+
   useEffect(() => {
-    if (!startLocation || !destination) return;
+    if (!isLoaded || !startLocation || !destination) return;
 
     const directionsService = new google.maps.DirectionsService();
 
@@ -72,11 +76,18 @@ export const RouteMap = ({ startLocation, destination, stops }: RouteMapProps) =
         }
       }
     );
-  }, [startLocation, destination, stops]);
+  }, [isLoaded, startLocation, destination, stops]);
+
+  if (!isLoaded) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-muted rounded-3xl">
+        <p className="text-muted-foreground">Loading map...</p>
+      </div>
+    );
+  }
 
   return (
-    <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY}>
-      <GoogleMap
+    <GoogleMap
         mapContainerStyle={mapContainerStyle}
         center={center}
         zoom={6}
@@ -100,6 +111,5 @@ export const RouteMap = ({ startLocation, destination, stops }: RouteMapProps) =
           />
         )}
       </GoogleMap>
-    </LoadScript>
   );
 };

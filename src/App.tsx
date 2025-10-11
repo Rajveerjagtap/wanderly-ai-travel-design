@@ -9,6 +9,7 @@ import Community from "./pages/Community";
 import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import ProfileSetup from "./pages/ProfileSetup";
+import ExplorePlaces from "./pages/ExplorePlaces";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/profile-setup" element={<ProfileSetup />} />
           <Route path="/route" element={<RoutePlanner />} />
+          <Route path="/explore" element={<ExplorePlaces />} />
           <Route path="/community" element={<Community />} />
           <Route path="/profile" element={<Profile />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

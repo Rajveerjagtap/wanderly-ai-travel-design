@@ -7,6 +7,8 @@ import { POIModal } from "@/components/POIModal";
 import { BottomNav } from "@/components/BottomNav";
 import { Badge } from "@/components/ui/badge";
 import { RouteMap } from "@/components/RouteMap";
+import { AddStopModal } from "@/components/AddStopModal";
+import { toast } from "sonner";
 import routeParis from "@/assets/route-paris.jpg";
 
 interface Stop {
@@ -45,6 +47,25 @@ const RoutePlanner = () => {
   const [selectedPOI, setSelectedPOI] = useState<Stop | null>(null);
   const [routeData, setRouteData] = useState<RouteData | null>(null);
   const [stops, setStops] = useState<Stop[]>([]);
+  const [showAddStopModal, setShowAddStopModal] = useState(false);
+
+  const handleAddNewStop = (place: { name: string; address: string }) => {
+    const newStop: Stop = {
+      id: stops.length + 1,
+      type: "attraction",
+      icon: <MapPin className="w-6 h-6" />,
+      title: place.name,
+      time: "2-3h",
+      cost: "TBD",
+      image: `https://images.unsplash.com/photo-${1600000000000 + stops.length}?w=800&h=600&fit=crop`,
+      rating: 4.5,
+      description: `Visit ${place.name} located at ${place.address}. A wonderful place to explore and add to your journey.`,
+      popularity: 4.5,
+      bestTimeToVisit: "Year-round",
+    };
+    setStops([...stops, newStop]);
+    toast.success(`${place.name} added to your route!`);
+  };
 
   // Get icon based on stop type
   const getIconForType = (type: string) => {
@@ -187,7 +208,7 @@ const RoutePlanner = () => {
           <h2 className="font-heading text-xl font-bold text-foreground">Journey Timeline</h2>
           
           {stops.map((stop, index) => (
-            <div key={stop.id} className="relative animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
+            <div key={stop.id} className="relative animate-fade-in space-y-2" style={{ animationDelay: `${index * 0.1}s` }}>
               {index < stops.length - 1 && (
                 <div className="absolute left-6 top-16 bottom-0 w-0.5 bg-primary/20 -z-10" />
               )}
@@ -198,8 +219,13 @@ const RoutePlanner = () => {
                 cost={stop.cost}
                 onClick={() => setSelectedPOI(stop)}
               />
+              {stop.description && (
+                <p className="text-sm text-muted-foreground ml-14 leading-relaxed">
+                  {stop.description}
+                </p>
+              )}
               {stop.popularity && stop.bestTimeToVisit && (
-                <div className="ml-14 mt-2 flex gap-3 text-xs text-muted-foreground">
+                <div className="ml-14 flex gap-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     ⭐ Popularity: {stop.popularity}/5
                   </span>
@@ -216,6 +242,7 @@ const RoutePlanner = () => {
         <Button 
           variant="outline" 
           className="w-full group"
+          onClick={() => setShowAddStopModal(true)}
         >
           <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
           Add a Stop
@@ -232,8 +259,16 @@ const RoutePlanner = () => {
           onClose={() => setSelectedPOI(null)}
           onAddToRoute={() => {
             setSelectedPOI(null);
-            // Handle add to route logic
+            toast.success("Added to your route!");
           }}
+        />
+      )}
+
+      {/* Add Stop Modal */}
+      {showAddStopModal && (
+        <AddStopModal
+          onClose={() => setShowAddStopModal(false)}
+          onAddStop={handleAddNewStop}
         />
       )}
 

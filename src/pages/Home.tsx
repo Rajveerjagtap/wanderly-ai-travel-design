@@ -3,6 +3,7 @@ import { MapPin, Navigation, ArrowRight, LogOut, Cloud, Wind } from "lucide-reac
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { RouteCard } from "@/components/RouteCard";
 import { BottomNav } from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +20,12 @@ const Home = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [destinationWeather, setDestinationWeather] = useState<any>(null);
   const [isLoadingWeather, setIsLoadingWeather] = useState(false);
+  const [showPreferences, setShowPreferences] = useState(false);
+  const [preferences, setPreferences] = useState({
+    budget: "",
+    interests: [] as string[],
+    pace: "",
+  });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -98,13 +105,29 @@ const Home = () => {
       return;
     }
 
-    if (!startLocation || !destination) return;
+    if (!startLocation || !destination) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter both start location and destination.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!showPreferences) {
+      setShowPreferences(true);
+      return;
+    }
     
     setIsGenerating(true);
     
     try {
       const { data, error } = await supabase.functions.invoke('generate-route', {
-        body: { startLocation, destination }
+        body: { 
+          startLocation, 
+          destination,
+          preferences 
+        }
       });
 
       if (error) {
@@ -215,15 +238,97 @@ const Home = () => {
             />
           </div>
 
-          <Button 
-            variant="accent" 
-            className="w-full group"
-            onClick={handleCreateRoute}
-            disabled={!startLocation || !destination || isGenerating}
-          >
-            {isGenerating ? "Generating Route..." : "Create My Route"}
-            {!isGenerating && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
-          </Button>
+          {!showPreferences && (
+            <Button 
+              variant="accent" 
+              className="w-full group"
+              onClick={handleCreateRoute}
+              disabled={!startLocation || !destination || isGenerating}
+            >
+              Next: Set Preferences
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          )}
+
+          {showPreferences && (
+            <div className="space-y-4 animate-fade-in">
+              <h3 className="font-heading font-semibold text-foreground">Personalize Your Trip</h3>
+              
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Budget Range</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {["Budget", "Moderate", "Luxury"].map((budget) => (
+                    <Button
+                      key={budget}
+                      variant={preferences.budget === budget ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setPreferences({ ...preferences, budget })}
+                    >
+                      {budget}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Interests</label>
+                <div className="flex flex-wrap gap-2">
+                  {["Culture", "Adventure", "Food", "Nature", "Shopping", "Nightlife"].map((interest) => (
+                    <Badge
+                      key={interest}
+                      variant={preferences.interests.includes(interest) ? "default" : "outline"}
+                      className="cursor-pointer"
+                      onClick={() => {
+                        setPreferences({
+                          ...preferences,
+                          interests: preferences.interests.includes(interest)
+                            ? preferences.interests.filter(i => i !== interest)
+                            : [...preferences.interests, interest]
+                        });
+                      }}
+                    >
+                      {interest}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Travel Pace</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {["Relaxed", "Moderate", "Fast-paced"].map((pace) => (
+                    <Button
+                      key={pace}
+                      variant={preferences.pace === pace ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setPreferences({ ...preferences, pace })}
+                    >
+                      {pace}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => setShowPreferences(false)}
+                >
+                  Back
+                </Button>
+                <Button 
+                  variant="accent" 
+                  className="flex-1 group"
+                  onClick={handleCreateRoute}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? "Generating..." : "Create Route"}
+                  {!isGenerating && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Weather Info Card */}
           {destinationWeather && (

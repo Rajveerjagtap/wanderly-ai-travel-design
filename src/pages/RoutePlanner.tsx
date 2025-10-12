@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MapPin, Utensils, Landmark, Train, Plus, ArrowLeft, Bed } from "lucide-react";
+import { MapPin, Utensils, Landmark, Train, Plus, ArrowLeft, Bed, Filter } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { StopCard } from "@/components/StopCard";
@@ -10,6 +10,8 @@ import { RouteMap } from "@/components/RouteMap";
 import { AddStopModal } from "@/components/AddStopModal";
 import { toast } from "sonner";
 import routeParis from "@/assets/route-paris.jpg";
+import { supabase } from "@/integrations/supabase/client";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface Stop {
   id: number;
@@ -42,29 +44,107 @@ interface RouteData {
   overallBestTime: string;
 }
 
+const filterOptions = [
+  { id: "beaches", label: "Beaches", emoji: "🏖️" },
+  { id: "temples", label: "Temples", emoji: "🛕" },
+  { id: "churches", label: "Churches", emoji: "⛪" },
+  { id: "mosques", label: "Mosques", emoji: "🕌" },
+  { id: "hotels", label: "Hotels", emoji: "🏨" },
+];
+
 const RoutePlanner = () => {
   const navigate = useNavigate();
   const [selectedPOI, setSelectedPOI] = useState<Stop | null>(null);
   const [routeData, setRouteData] = useState<RouteData | null>(null);
   const [stops, setStops] = useState<Stop[]>([]);
   const [showAddStopModal, setShowAddStopModal] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
 
-  const handleAddNewStop = (place: { name: string; address: string }) => {
-    const newStop: Stop = {
-      id: stops.length + 1,
-      type: "attraction",
-      icon: <MapPin className="w-6 h-6" />,
-      title: place.name,
-      time: "2-3h",
-      cost: "TBD",
-      image: `https://images.unsplash.com/photo-${1600000000000 + stops.length}?w=800&h=600&fit=crop`,
-      rating: 4.5,
-      description: `Visit ${place.name} located at ${place.address}. A wonderful place to explore and add to your journey.`,
-      popularity: 4.5,
-      bestTimeToVisit: "Year-round",
-    };
-    setStops([...stops, newStop]);
-    toast.success(`${place.name} added to your route!`);
+  const handleAddNewStop = async (place: { name: string; address: string }) => {
+    try {
+      // Fetch real image for the place
+      const { data: imageData } = await supabase.functions.invoke('fetch-location-images', {
+        body: { location: place.name }
+      });
+
+      const newStop: Stop = {
+        id: stops.length + 1,
+        type: "attraction",
+        icon: <MapPin className="w-6 h-6" />,
+        title: place.name,
+        time: "2-3h",
+        cost: "TBD",
+        image: imageData?.imageUrl || `https://images.unsplash.com/photo-${1600000000000 + stops.length}?w=800&h=600&fit=crop`,
+        rating: 4.5,
+        description: `Visit ${place.name} located at ${place.address}. A wonderful place to explore and add to your journey.`,
+        popularity: 4.5,
+        bestTimeToVisit: "Year-round",
+      };
+      setStops([...stops, newStop]);
+      toast.success(`${place.name} added to your route!`);
+    } catch (error) {
+      console.error('Error adding stop:', error);
+      toast.error('Failed to add stop. Please try again.');
+    }
+  };
+
+  const handleFilterToggle = (filterId: string) => {
+    setSelectedFilters(prev => 
+      prev.includes(filterId) 
+        ? prev.filter(f => f !== filterId)
+        : [...prev, filterId]
+    );
+  };
+
+  const fetchFilteredStops = async () => {
+    if (selectedFilters.length === 0 || !routeData) return;
+
+    try {
+      const newStops: Stop[] = [];
+      
+      for (const filter of selectedFilters) {
+        const searchQuery = `${routeData.destination} ${filter}`;
+        
+        const { data: imageData } = await supabase.functions.invoke('fetch-location-images', {
+          body: { location: searchQuery }
+        });
+
+        newStops.push({
+          id: stops.length + newStops.length + 1,
+          type: filter === 'hotels' ? 'accommodation' : 'attraction',
+          icon: getIconForFilter(filter),
+          title: `Popular ${filter} in ${routeData.destination}`,
+          time: "2-3h",
+          cost: "Varies",
+          image: imageData?.imageUrl || `https://images.unsplash.com/photo-${Date.now() + newStops.length}?w=800&h=600&fit=crop`,
+          rating: 4.5,
+          description: `Explore the best ${filter} that ${routeData.destination} has to offer.`,
+          popularity: 4.5,
+          bestTimeToVisit: "Year-round",
+        });
+      }
+
+      setStops([...stops, ...newStops]);
+      toast.success(`Added ${newStops.length} filtered stops to your route!`);
+      setSelectedFilters([]);
+    } catch (error) {
+      console.error('Error fetching filtered stops:', error);
+      toast.error('Failed to add filtered stops.');
+    }
+  };
+
+  const getIconForFilter = (filter: string) => {
+    switch (filter) {
+      case "hotels":
+        return <Bed className="w-6 h-6" />;
+      case "temples":
+      case "churches":
+      case "mosques":
+        return <Landmark className="w-6 h-6" />;
+      default:
+        return <MapPin className="w-6 h-6" />;
+    }
   };
 
   // Get icon based on stop type
@@ -84,29 +164,55 @@ const RoutePlanner = () => {
   };
 
   useEffect(() => {
-    // Load route data from sessionStorage
-    const stored = sessionStorage.getItem('generatedRoute');
-    if (stored) {
-      const data: RouteData = JSON.parse(stored);
-      setRouteData(data);
-      
-      // Transform AI-generated stops to UI format with placeholder images
-      const transformedStops: Stop[] = data.stops.map((stop, index) => ({
-        id: index + 1,
-        type: stop.type as "transport" | "attraction" | "restaurant" | "accommodation",
-        icon: getIconForType(stop.type),
-        title: stop.title,
-        time: stop.time,
-        cost: stop.cost,
-        image: `https://images.unsplash.com/photo-${1600000000000 + index}?w=800&h=600&fit=crop`,
-        rating: stop.popularity,
-        description: stop.description,
-        popularity: stop.popularity,
-        bestTimeToVisit: stop.bestTimeToVisit,
-      }));
-      
-      setStops(transformedStops);
-    } else {
+    const loadRouteData = async () => {
+      // Load route data from sessionStorage
+      const stored = sessionStorage.getItem('generatedRoute');
+      if (stored) {
+        const data: RouteData = JSON.parse(stored);
+        setRouteData(data);
+        
+        // Transform AI-generated stops to UI format with real images
+        const transformedStops: Stop[] = await Promise.all(
+          data.stops.map(async (stop, index) => {
+            try {
+              const { data: imageData } = await supabase.functions.invoke('fetch-location-images', {
+                body: { location: stop.title }
+              });
+
+              return {
+                id: index + 1,
+                type: stop.type as "transport" | "attraction" | "restaurant" | "accommodation",
+                icon: getIconForType(stop.type),
+                title: stop.title,
+                time: stop.time,
+                cost: stop.cost,
+                image: imageData?.imageUrl || `https://images.unsplash.com/photo-${1600000000000 + index}?w=800&h=600&fit=crop`,
+                rating: stop.popularity,
+                description: stop.description,
+                popularity: stop.popularity,
+                bestTimeToVisit: stop.bestTimeToVisit,
+              };
+            } catch (error) {
+              console.error('Error fetching image for stop:', error);
+              return {
+                id: index + 1,
+                type: stop.type as "transport" | "attraction" | "restaurant" | "accommodation",
+                icon: getIconForType(stop.type),
+                title: stop.title,
+                time: stop.time,
+                cost: stop.cost,
+                image: `https://images.unsplash.com/photo-${1600000000000 + index}?w=800&h=600&fit=crop`,
+                rating: stop.popularity,
+                description: stop.description,
+                popularity: stop.popularity,
+                bestTimeToVisit: stop.bestTimeToVisit,
+              };
+            }
+          })
+        );
+        
+        setStops(transformedStops);
+      } else {
       // Fallback to default route if no AI data
       setRouteData({
         startLocation: "Delhi",
@@ -147,7 +253,10 @@ const RoutePlanner = () => {
         },
       ]);
     }
-  }, []);
+  };
+
+  loadRouteData();
+}, []);
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -175,6 +284,45 @@ const RoutePlanner = () => {
               </Badge>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Filter Section */}
+      <div className="sticky top-[73px] z-20 bg-background/95 backdrop-blur-sm border-b border-border">
+        <div className="max-w-screen-md mx-auto px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={showFilters ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="w-4 h-4 mr-2" />
+              Add Filters
+            </Button>
+            {selectedFilters.length > 0 && (
+              <Button size="sm" onClick={fetchFilteredStops}>
+                Apply ({selectedFilters.length})
+              </Button>
+            )}
+          </div>
+          {showFilters && (
+            <ScrollArea className="w-full mt-3">
+              <div className="flex gap-2 pb-2">
+                {filterOptions.map((filter) => (
+                  <Badge
+                    key={filter.id}
+                    variant={selectedFilters.includes(filter.id) ? "default" : "outline"}
+                    className="cursor-pointer whitespace-nowrap px-4 py-2 text-sm transition-smooth hover-lift"
+                    onClick={() => handleFilterToggle(filter.id)}
+                  >
+                    <span className="mr-2">{filter.emoji}</span>
+                    {filter.label}
+                  </Badge>
+                ))}
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+          )}
         </div>
       </div>
 

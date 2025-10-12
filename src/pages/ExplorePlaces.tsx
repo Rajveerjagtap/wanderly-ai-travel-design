@@ -156,11 +156,20 @@ const ExplorePlaces = () => {
   );
 
   const handleRouteClick = (route: Route) => {
+    // Convert highlights to stops with proper structure
+    const stops = route.highlights.map((highlight, index) => ({
+      title: highlight,
+      type: index % 3 === 0 ? "attraction" : index % 3 === 1 ? "restaurant" : "hotel",
+      cost: index % 2 === 0 ? "₹500-1000" : "₹1000-2000",
+      description: `Experience the beauty and culture of ${highlight}`,
+      imageUrl: `https://source.unsplash.com/800x600/?${encodeURIComponent(highlight)},India,travel`
+    }));
+
     // Store route data for the route planner
     sessionStorage.setItem('generatedRoute', JSON.stringify({
       startLocation: route.from,
       destination: route.to,
-      stops: [],
+      stops: stops,
       totalDuration: route.duration,
       totalCost: "₹15,000-25,000",
       overallBestTime: "October to March",

@@ -26,6 +26,7 @@ const Home = () => {
     interests: [] as string[],
     pace: "",
   });
+  const [routeImages, setRouteImages] = useState<Record<number, string>>({});
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -62,6 +63,31 @@ const Home = () => {
       rating: 5.0,
     },
   ];
+
+  // Fetch images for top routes
+  useEffect(() => {
+    const fetchImages = async () => {
+      const imageMap: Record<number, string> = {};
+      
+      for (const route of topRoutes) {
+        try {
+          const { data } = await supabase.functions.invoke('fetch-location-images', {
+            body: { location: route.destination }
+          });
+          
+          if (data?.imageUrl) {
+            imageMap[route.id] = data.imageUrl;
+          }
+        } catch (error) {
+          console.error(`Error fetching image for ${route.destination}:`, error);
+        }
+      }
+      
+      setRouteImages(imageMap);
+    };
+    
+    fetchImages();
+  }, []);
 
   // Fetch weather when destination changes
   useEffect(() => {
@@ -387,7 +413,7 @@ const Home = () => {
               <RouteCard
                 key={route.id}
                 title={route.title}
-                image={`https://source.unsplash.com/800x600/?${route.destination},travel,landmark`}
+                image={routeImages[route.id] || `https://source.unsplash.com/800x600/?${route.destination},travel,landmark`}
                 creator={route.creator}
                 rating={route.rating}
                 onClick={() => navigate("/community")}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { MapPin, Navigation, ArrowRight, LogOut, Cloud, Wind } from "lucide-react";
+import { MapPin, Navigation, ArrowRight, LogOut, Cloud, Wind, Sparkles, TrendingUp, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { TrendingDestinations } from "@/components/TrendingDestinations";
 import heroImage from "@/assets/wanderly-hero.jpg";
 
 const Home = () => {
@@ -203,7 +204,14 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero pb-24">
+    <div className="min-h-screen bg-background pb-24 relative overflow-hidden">
+      {/* Animated background with floating orbs */}
+      <div className="absolute inset-0 bg-gradient-mesh pointer-events-none">
+        <div className="floating-orb w-96 h-96 bg-primary/20 -top-48 -left-48 animate-float" />
+        <div className="floating-orb w-80 h-80 bg-accent/20 top-1/3 -right-40 animate-float" style={{ animationDelay: '2s' }} />
+        <div className="floating-orb w-72 h-72 bg-primary/15 bottom-0 left-1/4 animate-float" style={{ animationDelay: '4s' }} />
+      </div>
+
       {/* Header */}
       <div className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-30">
         <div className="max-w-screen-md mx-auto px-4 py-4 flex items-center justify-between">
@@ -224,9 +232,19 @@ const Home = () => {
         </div>
       </div>
 
-      <div className="max-w-screen-md mx-auto px-4 py-6">
-        {/* Hero Section */}
+      <div className="max-w-screen-md mx-auto px-4 py-6 relative z-10">
+        {/* Enhanced Hero Section */}
         <div className="text-center mb-8 animate-fade-in">
+          {/* Badge with animation */}
+          <div className="flex justify-center mb-4">
+            <div className="glass-card px-4 py-2 rounded-full flex items-center gap-2 shadow-glow">
+              <Sparkles className="w-4 h-4 text-accent animate-pulse-glow" />
+              <span className="text-sm font-medium bg-gradient-accent bg-clip-text text-transparent">
+                AI-Powered Travel Planning
+              </span>
+            </div>
+          </div>
+
           <div className="mb-6 flex justify-center">
             <img 
               src={heroImage} 
@@ -234,12 +252,31 @@ const Home = () => {
               className="w-48 h-48 object-contain animate-bounce-soft"
             />
           </div>
-          <h1 className="font-heading text-4xl font-bold text-foreground mb-2">
-            Where to next?
+
+          <h1 className="font-heading text-5xl font-bold mb-4">
+            <span className="bg-gradient-primary bg-clip-text text-transparent">
+              Where to next?
+            </span>
           </h1>
-          <p className="text-muted-foreground text-lg">
-            Let's plan your perfect adventure together
+          <p className="text-muted-foreground text-lg mb-6">
+            Let AI craft your perfect journey with personalized routes
           </p>
+
+          {/* Live Statistics */}
+          <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
+            <div className="glass-card p-4 rounded-2xl">
+              <div className="text-2xl font-bold text-primary mb-1">1000+</div>
+              <div className="text-xs text-muted-foreground">Routes Created</div>
+            </div>
+            <div className="glass-card p-4 rounded-2xl">
+              <div className="text-2xl font-bold text-accent mb-1">5000+</div>
+              <div className="text-xs text-muted-foreground">Happy Travelers</div>
+            </div>
+            <div className="glass-card p-4 rounded-2xl">
+              <div className="text-2xl font-bold text-primary mb-1">4.8★</div>
+              <div className="text-xs text-muted-foreground">Average Rating</div>
+            </div>
+          </div>
         </div>
 
         {/* Search Form */}
@@ -393,12 +430,21 @@ const Home = () => {
           )}
         </div>
 
+        {/* Trending Destinations Section */}
+        <div className="mb-8">
+          <TrendingDestinations />
+        </div>
+
         {/* Community's Top Routes */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-heading text-2xl font-bold text-foreground">
-              Community's Top Routes
-            </h2>
+            <div>
+              <h2 className="font-heading text-2xl font-bold text-foreground flex items-center gap-2">
+                <TrendingUp className="w-6 h-6 text-primary" />
+                Community's Top Routes
+              </h2>
+              <p className="text-sm text-muted-foreground">Explore popular journeys from our community</p>
+            </div>
             <Button 
               variant="ghost" 
               size="sm"
@@ -409,15 +455,16 @@ const Home = () => {
           </div>
 
           <div className="grid grid-cols-1 gap-4">
-            {topRoutes.map((route) => (
-              <RouteCard
-                key={route.id}
-                title={route.title}
-                image={routeImages[route.id] || `https://source.unsplash.com/800x600/?${route.destination},travel,landmark`}
-                creator={route.creator}
-                rating={route.rating}
-                onClick={() => navigate("/community")}
-              />
+            {topRoutes.map((route, index) => (
+              <div key={route.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
+                <RouteCard
+                  title={route.title}
+                  image={routeImages[route.id] || `https://source.unsplash.com/800x600/?${route.destination},travel,landmark`}
+                  creator={route.creator}
+                  rating={route.rating}
+                  onClick={() => navigate("/community")}
+                />
+              </div>
             ))}
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MapPin, Utensils, Landmark, Train, Plus, ArrowLeft, Bed, Filter } from "lucide-react";
+import { MapPin, Utensils, Landmark, Train, Plus, ArrowLeft, Bed, Filter, Map, List } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { StopCard } from "@/components/StopCard";
@@ -8,6 +8,8 @@ import { BottomNav } from "@/components/BottomNav";
 import { Badge } from "@/components/ui/badge";
 import { RouteMap } from "@/components/RouteMap";
 import { AddStopModal } from "@/components/AddStopModal";
+import { BudgetCalculator } from "@/components/BudgetCalculator";
+import { TimelineView } from "@/components/TimelineView";
 import { toast } from "sonner";
 import routeParis from "@/assets/route-paris.jpg";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,6 +62,7 @@ const RoutePlanner = () => {
   const [showAddStopModal, setShowAddStopModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<"map" | "timeline">("map");
 
   const handleAddNewStop = async (place: { name: string; address: string }) => {
     try {
@@ -327,28 +330,65 @@ const RoutePlanner = () => {
       </div>
 
       <div className="max-w-screen-md mx-auto px-4 py-6">
-        {/* Map Section */}
-        <div className="bg-primary/5 rounded-3xl h-96 mb-6 relative overflow-hidden shadow-soft animate-fade-in">
-          <RouteMap
-            startLocation={routeData?.startLocation || "Delhi"}
-            destination={routeData?.destination || "Agra"}
-            stops={stops}
-          />
-          <div className="absolute bottom-4 left-4 right-4 pointer-events-none">
-            <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-4 shadow-medium">
-              <div className="flex items-center gap-2 text-foreground mb-2">
-                <MapPin className="w-5 h-5 text-primary" />
-                <span className="font-heading font-semibold">
-                  {stops.length} stops • {routeData?.totalDuration || "N/A"} • {routeData?.totalCost || "N/A"}
-                </span>
+        {/* View Toggle */}
+        <div className="flex gap-2 mb-4">
+          <Button
+            variant={viewMode === "map" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("map")}
+            className="flex-1"
+          >
+            <Map className="w-4 h-4 mr-2" />
+            Map View
+          </Button>
+          <Button
+            variant={viewMode === "timeline" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("timeline")}
+            className="flex-1"
+          >
+            <List className="w-4 h-4 mr-2" />
+            Timeline View
+          </Button>
+        </div>
+
+        {/* Map or Timeline Section */}
+        {viewMode === "map" ? (
+          <div className="bg-primary/5 rounded-3xl h-96 mb-6 relative overflow-hidden shadow-soft animate-fade-in">
+            <RouteMap
+              startLocation={routeData?.startLocation || "Delhi"}
+              destination={routeData?.destination || "Agra"}
+              stops={stops}
+            />
+            <div className="absolute bottom-4 left-4 right-4 pointer-events-none">
+              <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-4 shadow-medium">
+                <div className="flex items-center gap-2 text-foreground mb-2">
+                  <MapPin className="w-5 h-5 text-primary" />
+                  <span className="font-heading font-semibold">
+                    {stops.length} stops • {routeData?.totalDuration || "N/A"} • {routeData?.totalCost || "N/A"}
+                  </span>
+                </div>
+                {routeData?.overallBestTime && (
+                  <p className="text-sm text-muted-foreground">
+                    Best time to visit: {routeData.overallBestTime}
+                  </p>
+                )}
               </div>
-              {routeData?.overallBestTime && (
-                <p className="text-sm text-muted-foreground">
-                  Best time to visit: {routeData.overallBestTime}
-                </p>
-              )}
             </div>
           </div>
+        ) : (
+          <div className="bg-card rounded-3xl mb-6 shadow-soft overflow-hidden">
+            <TimelineView
+              startLocation={routeData?.startLocation || "Delhi"}
+              destination={routeData?.destination || "Agra"}
+              stops={stops}
+            />
+          </div>
+        )}
+
+        {/* Budget Calculator */}
+        <div className="mb-6">
+          <BudgetCalculator />
         </div>
 
         {/* Timeline */}
